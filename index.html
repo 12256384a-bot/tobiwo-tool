@@ -230,6 +230,7 @@
     <div class="nav-tab" onclick="switchNav('quote')">🔁 引用リプ</div>
     <div class="nav-tab" onclick="switchNav('viral')">🔥 バズ投稿</div>
     <div class="nav-tab" onclick="switchNav('kata')">📐 型から生成</div>
+    <div class="nav-tab" onclick="switchNav('tree')">🌳 ツリー投稿</div>
     <div class="nav-tab" onclick="switchNav('approve')">✅ 承認</div>
   </div>
 
@@ -315,6 +316,31 @@
     <button class="btn-primary" id="btn-quote" onclick="generateQuotes()">引用リプを生成</button>
     <div id="quote-status"></div>
     <div id="quote-results"></div>
+  </div>
+
+  <!-- ツリー投稿 -->
+  <div id="tab-tree" style="display:none;">
+    <h2>🌳 ツリー投稿</h2>
+    <div style="background:#1a1a1a;border:1px solid #f9731633;border-radius:12px;padding:12px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;">
+      1枚目で「続きはリプ欄に」と引っ張り、リプ欄に続きを書くツリー型投稿を生成します。<br>
+      <strong style="color:#f97316">1枚目＋リプ2枚</strong>のセットで出力します。
+    </div>
+    <div class="section">
+      <label>テーマ・キーワード</label>
+      <textarea id="tree-input" placeholder="例：ノウハウ疲れ、副業3年ゼロ、AIで変わった話、住宅ローンのプレッシャー..." rows="4"></textarea>
+    </div>
+    <div class="section">
+      <label>投稿の型</label>
+      <select id="tree-type">
+        <option value="mystery">謎かけ型（答えをリプで明かす）</option>
+        <option value="step">ステップ型（手順をリプで展開）</option>
+        <option value="list">実績リスト型（続きをリプで出す）</option>
+        <option value="story">ストーリー型（結末をリプで語る）</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="btn-tree" onclick="generateTree()">ツリー投稿を生成</button>
+    <div id="tree-status" style="text-align:center;font-size:0.85rem;color:#71767b;margin:8px 0;min-height:20px;"></div>
+    <div id="tree-result"></div>
   </div>
 
   <!-- 型から生成 -->
@@ -607,8 +633,8 @@ document.getElementById('password-input').addEventListener('keydown', e => { if 
 renderKeywords();
 
 function switchNav(tab) {
-  document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', ['post','comment','reply','quote','viral','kata','approve'][i] === tab));
-  ['post','comment','reply','quote','viral','kata','approve'].forEach(t => {
+  document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', ['post','comment','reply','quote','viral','kata','tree','approve'][i] === tab));
+  ['post','comment','reply','quote','viral','kata','tree','approve'].forEach(t => {
     document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'approve' && localStorage.getItem('tobiwo_gh_token') && drafts.length === 0) loadDrafts();
@@ -706,6 +732,115 @@ async function generate() {
   } finally {
     btn.disabled = false; btn.innerHTML = 'AIでポストを生成';
   }
+}
+
+async function generateTree() {
+  const apiKey = getApiKey();
+  if (!apiKey) { document.getElementById('tree-status').textContent = '⚙️ API設定からAPIキーを入力してください'; return; }
+  const input = document.getElementById('tree-input').value.trim();
+  if (!input) { document.getElementById('tree-status').textContent = 'キーワードを入力してください'; return; }
+  const treeType = document.getElementById('tree-type').value;
+  const btn = document.getElementById('btn-tree');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>生成中...';
+  document.getElementById('tree-status').textContent = '';
+  document.getElementById('tree-result').innerHTML = '';
+
+  const typeGuide = {
+    mystery: `謎かけ型：1枚目で「たった1つのことで変わった」「ある気づきがあった」など答えを明かさず引っ張る。最後に「↓続きはリプ欄に」。リプ1枚目で答えを明かす。リプ2枚目で読者への問いかけか行動提案で締め。`,
+    step:    `ステップ型：1枚目で「〇〇する方法、リプ欄に全部書いた」と予告だけする。リプ1枚目でSTEP①〜③を説明。リプ2枚目でSTEP④〜⑤＋「気になる人は固定ポスト見てみて」で締め。`,
+    list:    `実績リスト型：1枚目で「副業〇年でわかったこと、全部書く」と宣言し2〜3個だけ出す。最後に「↓続きはリプ欄に」。リプ1枚目で残りのリストを出す。リプ2枚目でネガティブな気づきを1つ追加し余韻で締め。`,
+    story:   `ストーリー型：1枚目で工場勤務・住宅ローン・副業ゼロの頃のシーンを描写し「あの日から変わった」で引っ張る。リプ1枚目で転機のエピソードを語る。リプ2枚目で「今」を短く語り余韻で締め。`,
+  };
+
+  const prompt = `以下のキーワード・ネタをもとに、ツリー型投稿（1枚目＋リプ2枚）を作ってください。
+
+【キーワード・ネタ】
+${input}
+
+【型の指示】
+${typeGuide[treeType]}
+
+【ルール】
+- 1枚目は500字以内、リプ各枚も500字以内
+- 1枚目の最後は「↓続きはリプ欄に」または「リプ欄に書いた」で引っ張る
+- 毎回全部読まなくても1枚目だけでなんとなく意味がわかるくらいにする
+- 宣伝感・説教感ゼロ。体験談ベース
+- ハッシュタグなし
+- 凍結リスクワード禁止（不労所得・情報商材・絶対稼げるなど）
+- AIっぽい表現禁止。話し言葉・余韻を大切に
+
+【出力形式】
+以下の形式で出力：
+===1枚目===
+（投稿文）
+
+===リプ1枚目===
+（投稿文）
+
+===リプ2枚目===
+（投稿文）`;
+
+  try {
+    const raw = await callClaude(apiKey, {
+      model: 'claude-sonnet-4-6', max_tokens: 3000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const sections = raw.split(/===(.+?)===/g).filter(s => s.trim());
+    const labels = [];
+    const texts = [];
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].match(/1枚目|リプ1|リプ2/)) {
+        labels.push(sections[i].trim());
+        if (sections[i+1]) texts.push(sections[i+1].trim());
+        i++;
+      }
+    }
+
+    const colors = ['#f97316','#888','#555'];
+    const labelNames = ['1枚目（本投稿）','リプ1枚目','リプ2枚目'];
+    document.getElementById('tree-result').innerHTML = texts.map((t, i) => {
+      const over = t.length > 500;
+      return `<div class="post-card" style="border-left:3px solid ${colors[i]||'#555'}">
+        <div style="font-size:11px;color:${colors[i]||'#555'};margin-bottom:6px;font-weight:600;">${labelNames[i]||`リプ${i}枚目`}</div>
+        <div id="ttext-${i}">${esc(t)}</div>
+        <textarea class="draft-edit" id="tedit-${i}" style="display:none">${esc(t)}</textarea>
+        <div class="post-card-footer">
+          <span class="post-card-len ${over?'over':'ok'}">${t.length}字${over?' ⚠️':''}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-copy-post" id="tebtn-${i}" onclick="toggleTreeEdit(${i})">編集</button>
+            <button class="btn-copy-post" onclick="copyTreePost(${i})">コピー</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('<div style="text-align:center;font-size:18px;color:#333;margin:4px 0;">↓</div>');
+
+    document.getElementById('tree-status').textContent = `${texts.length}枚生成完了！`;
+  } catch (e) {
+    document.getElementById('tree-status').textContent = `エラー: ${e.message}`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'ツリー投稿を生成';
+  }
+}
+
+let _treePosts = [];
+function toggleTreeEdit(i) {
+  const textEl = document.getElementById(`ttext-${i}`);
+  const editEl = document.getElementById(`tedit-${i}`);
+  const btnEl = document.getElementById(`tebtn-${i}`);
+  if (editEl.style.display === 'block') {
+    textEl.innerHTML = esc(editEl.value.trim());
+    editEl.style.display = 'none'; textEl.style.display = 'block'; btnEl.textContent = '編集';
+  } else {
+    editEl.style.display = 'block'; textEl.style.display = 'none'; btnEl.textContent = '保存';
+  }
+}
+function copyTreePost(i) {
+  const editEl = document.getElementById(`tedit-${i}`);
+  const textEl = document.getElementById(`ttext-${i}`);
+  const text = editEl.style.display === 'block' ? editEl.value : textEl.textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました！'));
 }
 
 async function generateKata() {
