@@ -267,6 +267,7 @@
       <textarea id="memo" placeholder="例：住宅ローン、工場勤務、AI自動化、副業3年ゼロ..." rows="3"></textarea>
     </div>
     <button class="btn-primary" id="btn-generate" onclick="generate()">AIでポストを生成</button>
+    <button class="btn-sub" id="btn-ohayo" onclick="generateOhayo()" style="margin-top:8px;background:#1a1a1a;border:1px solid #f97316;color:#f97316;">🌅 おはようポスト生成（5件）</button>
     <div id="post-list"></div>
     <button class="btn-sub" onclick="generate()" style="margin-top:8px;">もう一度生成</button>
     <div id="post-status"></div>
@@ -591,6 +592,13 @@ H｜ノウハウ系（80〜120字）
 - 感情が先に来て、説明は後から（または説明しない）
 - 話し言葉に近い自然なリズム
 
+【エネルギー表現（全体の2〜3割に自然な形で入れる）】
+テンション上がったとき・何か掴んだとき・行動宣言のときに使う。毎回は使わない。
+使ってOKな表現例：
+「よっしゃ」「やったるぞ」「行くぞ」「気合い入れていく」「まじでやる」「本気でいく」
+「うおー」「燃えてきた」「ようやくだ」「やっとだ」「これだ、と思った」
+感嘆符（！）は1投稿に1〜2個まで。多用すると安っぽくなる。
+
 【出力】
 投稿文のみを「---」で区切って出力。番号・タイプ名・文字数・説明は一切付けない。`;
 
@@ -731,6 +739,53 @@ async function generate() {
     setPostStatus(`エラー: ${e.message}`, 'error');
   } finally {
     btn.disabled = false; btn.innerHTML = 'AIでポストを生成';
+  }
+}
+
+async function generateOhayo() {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    setPostStatus('⚙️ API設定からAPIキーを入力してください', 'error');
+    document.getElementById('settings-panel').style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-ohayo');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>生成中...';
+  setPostStatus(''); document.getElementById('post-list').innerHTML = '';
+
+  const prompt = `おはようポストを5件作ってください。
+
+【おはようポストのルール】
+- 朝に投稿する短い投稿（50〜120字）
+- 「おはよう」「おはようございます」「おはよ」など朝の挨拶から始めてOK（毎回同じにしない）
+- 朝の状況・気持ち・気づきを素直に書く。説教にしない。
+- 体験や感情を1つだけ乗せる（朝の習慣、昨日の気づき、今日やること、天気・季節感など）
+- 読者が「いいね」か「俺も」とコメントしたくなる終わり方
+- 2〜3件に1件は「よっしゃ」「今日もやったる」「行くぞ」などエネルギー系の表現を入れる
+- ハッシュタグなし・感嘆符は1つまで
+
+【バリエーション（5件でバラけること）】
+① 朝の行動＋今日の一言
+② 昨夜の気づき→朝の気持ち
+③ エネルギー系（気合い・宣言）
+④ 季節・天気・情景から入る
+⑤ 問いかけ系（「みんな朝何してる？」など）
+
+各投稿を「---」で区切って出力。番号・説明は一切付けない。`;
+
+  try {
+    const raw = await callClaude(apiKey, {
+      model: 'claude-sonnet-4-6', max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    _posts = raw.split('---').map(p => p.trim()).filter(Boolean);
+    renderPosts(_posts);
+    setPostStatus(`おはようポスト ${_posts.length}件生成完了！`, 'success');
+  } catch (e) {
+    setPostStatus(`エラー: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🌅 おはようポスト生成（5件）';
   }
 }
 
