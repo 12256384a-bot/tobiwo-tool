@@ -229,6 +229,7 @@
     <div class="nav-tab" onclick="switchNav('reply')">↩️ 返信</div>
     <div class="nav-tab" onclick="switchNav('quote')">🔁 引用リプ</div>
     <div class="nav-tab" onclick="switchNav('viral')">🔥 バズ投稿</div>
+    <div class="nav-tab" onclick="switchNav('kata')">📐 型から生成</div>
     <div class="nav-tab" onclick="switchNav('approve')">✅ 承認</div>
   </div>
 
@@ -314,6 +315,22 @@
     <button class="btn-primary" id="btn-quote" onclick="generateQuotes()">引用リプを生成</button>
     <div id="quote-status"></div>
     <div id="quote-results"></div>
+  </div>
+
+  <!-- 型から生成 -->
+  <div id="tab-kata" style="display:none;">
+    <h2>📐 型から生成</h2>
+    <div style="background:#1a1a1a;border:1px solid #f9731633;border-radius:12px;padding:12px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;">
+      キーワード・ネタ・文章を入力すると、<strong style="color:#f97316">バズ12型</strong>を使って12件のポストを生成します。<br>
+      型①〜⑫をそれぞれ1件ずつ作ります。
+    </div>
+    <div class="section">
+      <label>キーワード・ネタ・参考文章</label>
+      <textarea id="kata-input" placeholder="例：AI副業、住宅ローン、工場勤務から这い上がった話、スマホだけで稼げる... など自由に入力" rows="5"></textarea>
+    </div>
+    <button class="btn-primary" id="btn-kata" onclick="generateKata()">12型で生成</button>
+    <div id="kata-status" style="text-align:center;font-size:0.85rem;color:#71767b;margin:8px 0;min-height:20px;"></div>
+    <div id="kata-list"></div>
   </div>
 
   <!-- バズ投稿 -->
@@ -501,6 +518,47 @@ H｜ノウハウ系（80〜120字）
 - 暴露：「正直に言う」「ぶっちゃけ」「3年間ゼロだった俺が言うのもなんだけど」
 - 数字：「副業3年・損失○万・結果ゼロ。それでも変われた話」
 
+【バズ投稿から学んだ12の型（キーワード生成時に優先して使う）】
+型①｜命令形リスト型
+  「〇〇したいなら」タイトル → 命令形リスト×5〜10 → 短い締め一言
+  例：「AI×Threadsで副収入作りたいなら / ・ノウハウ集めるな、手を動かせ / .../ あとは動くだけ。」
+
+型②｜逆説連打型
+  逆説を2〜3連打 → 法則1行 → 「知らんけど」で余韻
+  例：「諦めようと思った瞬間に稼げだした。完璧にやろうとやめた瞬間、続けられた。力抜いた方がうまくいく、、、知らんけど。」
+
+型③｜警告・格差型
+  「これだけは言わせて。」→ 自分の立場を先に出す → 格差・変化の警告 → 小さな行動で締め
+
+型④｜日常共感→問いかけ型
+  小さくてリアルな日常エピソード → 友達・家族のツッコミ → 「俺だけじゃないよな？」
+
+型⑤｜隠してない開示型
+  「実際何してるの？」を自分で問う → 「隠してません」宣言 → 具体的にやってること列挙 → 固定ポストへ誘導
+
+型⑥｜疑念代弁→実体験型
+  読者が心の中で思ってる疑念を先に言う → 「俺もそう思ってた」 → 実体験で覆す → 小さな一歩で締め（収益額は書かない）
+
+型⑦｜対比2行型
+  「〇〇の頃：〜 / 今：〜」または「〇〇すると：〜 / 〇〇しないと：〜」の2行だけ。説明しない。
+
+型⑧｜謎かけ・疑問型
+  読者が「え、なんで？」と思う状況を提示 → 計算が合わない感じを出す → 「カラクリは固定ポストに」で締め
+
+型⑨｜実績リスト型（ネガポジ混在）
+  「〇〇して分かったこと」タイトル → リスト（ポジ多め・ネガ1〜2個混ぜる）→ 締めなし余韻
+  ※ネガを混ぜるとリアル感・信頼感が上がる
+
+型⑩｜逆張り信頼構築型
+  「〇〇すればいいじゃん」という外からの声 → 「でも俺はしない」宣言 → 理由（信頼が先） → 「安心してついてきて」
+
+型⑪｜成長記録型
+  数字の変化（小さい→少し大きい）→ 感情の爆発（短く）→ 宣言で締め
+
+型⑫｜余韻・喪失感型
+  年齢・状況の提示 → 喪失・停滞感を羅列（対比構造）→ 結論なし、余韻で終わる
+  ※「俺もそう」系のコメントが自然に来る型
+
 【人間らしさ・AIっぽさ禁止】
 - 途中で言葉が詰まる感じ（「、、、」「…」）を使う
 - 「知らんけど」「〜かもしれない」「気がする」で余韻を残す
@@ -549,8 +607,8 @@ document.getElementById('password-input').addEventListener('keydown', e => { if 
 renderKeywords();
 
 function switchNav(tab) {
-  document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', ['post','comment','reply','quote','viral','approve'][i] === tab));
-  ['post','comment','reply','quote','viral','approve'].forEach(t => {
+  document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', ['post','comment','reply','quote','viral','kata','approve'][i] === tab));
+  ['post','comment','reply','quote','viral','kata','approve'].forEach(t => {
     document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'approve' && localStorage.getItem('tobiwo_gh_token') && drafts.length === 0) loadDrafts();
@@ -647,6 +705,83 @@ async function generate() {
     setPostStatus(`エラー: ${e.message}`, 'error');
   } finally {
     btn.disabled = false; btn.innerHTML = 'AIでポストを生成';
+  }
+}
+
+async function generateKata() {
+  const apiKey = getApiKey();
+  if (!apiKey) { document.getElementById('kata-status').textContent = '⚙️ API設定からAPIキーを入力してください'; return; }
+  const input = document.getElementById('kata-input').value.trim();
+  if (!input) { document.getElementById('kata-status').textContent = 'キーワードを入力してください'; return; }
+  const btn = document.getElementById('btn-kata');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>生成中...';
+  document.getElementById('kata-status').textContent = '';
+  document.getElementById('kata-list').innerHTML = '';
+
+  const prompt = `以下のキーワード・ネタをもとに、バズ12型を使って12件のThreads投稿を作ってください。
+
+【キーワード・ネタ】
+${input}
+
+【作る型と順番】
+型①：命令形リスト型（「〇〇したいなら」タイトル→命令形リスト×5〜8→短い締め）
+型②：逆説連打型（逆説2〜3連打→法則1行→「知らんけど」余韻）
+型③：警告・格差型（「これだけは言わせて。」→格差の警告→小さな行動で締め）
+型④：日常共感→問いかけ型（リアルな日常エピソード→「俺だけじゃないよな？」）
+型⑤：隠してない開示型（「隠してません」→具体的にやってること→固定ポスト誘導）
+型⑥：疑念代弁→実体験型（読者の疑念を先に言う→「俺もそう思ってた」→実体験）
+型⑦：対比2行型（「〇〇の頃：〜 / 今：〜」2行のみ、説明なし）
+型⑧：謎かけ・疑問型（計算が合わない状況提示→「カラクリは固定ポストに」）
+型⑨：実績リスト型（「〇〇して分かったこと」→ネガポジ混在リスト→余韻）
+型⑩：逆張り信頼構築型（外の声→「でも俺はしない」宣言→信頼の理由）
+型⑪：成長記録型（小さな数字の変化→感情爆発→宣言）
+型⑫：余韻・喪失感型（年齢・状況→停滞感羅列→結論なし余韻）
+
+各投稿を「---」で区切って出力。番号・型名・説明は一切付けない。投稿文のみ。`;
+
+  try {
+    const raw = await callClaude(apiKey, {
+      model: 'claude-sonnet-4-6', max_tokens: 6000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    const posts = raw.split('---').map(p => p.trim()).filter(Boolean);
+    const typeNames = ['①命令形リスト','②逆説連打','③警告・格差','④日常共感→問いかけ','⑤隠してない開示','⑥疑念代弁→実体験','⑦対比2行','⑧謎かけ・疑問','⑨実績リスト','⑩逆張り信頼','⑪成長記録','⑫余韻・喪失感'];
+    document.getElementById('kata-list').innerHTML = posts.map((p, i) => {
+      const over = p.length > 500;
+      const label = typeNames[i] || `型${i+1}`;
+      return `<div class="post-card">
+        <div style="font-size:11px;color:#f97316;margin-bottom:6px;">型${label}</div>
+        <div id="ktext-${i}">${esc(p)}</div>
+        <textarea class="draft-edit" id="kedit-${i}" style="display:none">${esc(p)}</textarea>
+        <div class="post-card-footer">
+          <span class="post-card-len ${over?'over':'ok'}">${p.length}字${over?' ⚠️':''}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-copy-post" id="kebtn-${i}" onclick="toggleKataEdit(${i})">編集</button>
+            <button class="btn-copy-post" onclick="navigator.clipboard.writeText(document.getElementById('kedit-${i}').style.display==='block'?document.getElementById('kedit-${i}').value:document.getElementById('ktext-${i}').textContent).then(()=>showToast('コピーしました！'))">コピー</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('kata-status').textContent = `${posts.length}件生成完了！`;
+    document.getElementById('kata-status').className = 'success';
+  } catch (e) {
+    document.getElementById('kata-status').textContent = `エラー: ${e.message}`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = '12型で生成';
+  }
+}
+
+function toggleKataEdit(i) {
+  const textEl = document.getElementById(`ktext-${i}`);
+  const editEl = document.getElementById(`kedit-${i}`);
+  const btnEl = document.getElementById(`kebtn-${i}`);
+  const isEditing = editEl.style.display === 'block';
+  if (isEditing) {
+    textEl.innerHTML = esc(editEl.value.trim());
+    editEl.style.display = 'none'; textEl.style.display = 'block'; btnEl.textContent = '編集';
+  } else {
+    editEl.style.display = 'block'; textEl.style.display = 'none'; btnEl.textContent = '保存';
   }
 }
 
