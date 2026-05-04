@@ -395,6 +395,9 @@
       <input type="password" id="gh-token-input" placeholder="ghp_..." />
       <button onclick="saveGhToken()">保存して読み込む</button>
     </div>
+    <div style="text-align:right;margin-bottom:8px;">
+      <button onclick="resetGhToken()" style="background:none;border:none;color:#555;font-size:11px;cursor:pointer;text-decoration:underline;">🔄 トークンをリセット</button>
+    </div>
     <div class="sub-tabs">
       <div class="sub-tab active" onclick="switchSubTab('pending')">未承認</div>
       <div class="sub-tab" onclick="switchSubTab('approved')">承認済</div>
@@ -1263,6 +1266,12 @@ function saveGhToken() {
   localStorage.setItem('tobiwo_gh_token', token);
   document.getElementById('gh-token-area').style.display = 'none';
   loadDrafts();
+}
+function resetGhToken() {
+  localStorage.removeItem('tobiwo_gh_token');
+  document.getElementById('gh-token-input').value = '';
+  document.getElementById('gh-token-area').style.display = 'block';
+  document.getElementById('draft-list').innerHTML = '<div class="loading-msg">GitHubトークンを入力してください</div>';
 }
 
 async function loadDrafts() {
